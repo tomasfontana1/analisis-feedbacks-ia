@@ -1,0 +1,4179 @@
+{
+  "name": "M2 Integradora",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "451c2b51-d878-4397-9a14-047a0077a8da",
+              "name": "airtable_record_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "53a39b1b-d524-4c1a-9b73-6157c11537ba",
+              "name": "nombre_cliente",
+              "value": "={{ $json.fields.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "c12e0791-d325-402b-860c-092308cf0838",
+              "name": "email_cliente",
+              "value": "={{ $json.fields.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "15ee077d-9118-4a9f-b6e7-60c8215a52a2",
+              "name": "puntaje_nps",
+              "value": "={{ $json.fields.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "82dc123a-3014-49f9-9421-f867aac9b6d2",
+              "name": "comentario_del_cliente",
+              "value": "={{ $json.fields.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "ff3ecf84-0846-4245-8d3a-3aa3f48cb369",
+              "name": "fecha_respuesta",
+              "value": "={{ $json.fields.fecha_respuesta }}",
+              "type": "string"
+            },
+            {
+              "id": "e26d3897-bcc0-48cb-b245-9311c679634f",
+              "name": "id",
+              "value": "={{ $json.fields.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -768
+      ],
+      "id": "ca9790fb-b82d-4216-b3f4-4af77be29da5",
+      "name": "Limpio datos"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "=clientes",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=email",
+              "condition": "eq",
+              "keyValue": "={{$node[\"Trae la tabla\"].json.fields.email_cliente.trim().toLowerCase()}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        384,
+        -768
+      ],
+      "id": "bdb53c5b-502c-44ee-8dfd-bd47bfa91e6c",
+      "name": "Conecto con Supabase via email",
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Datos del feedback:\nnps: {{$json.puntaje_nps}}\ncomentario: {{$json.comentario_del_cliente}}\n\nCategorías:\n- satisfaccion: elogios claros / experiencia excelente.\n- sugerencia: pedidos de mejora, ideas, features, UX.\n- observacion: comentario neutro/descriptivo sin pedido ni queja fuerte.\n- falla_tecnica: bugs, errores, no funciona, falló, “no carga”, soporte técnico.\n- reclamo: queja fuerte/enojo, mala experiencia grave, reembolso, amenaza de baja, etc.\n\nUsá NPS como señal (priorizá el texto):\n0–6 suele ser falla_tecnica o reclamo\n7–8 suele ser sugerencia u observacion\n9–10 suele ser satisfaccion (salvo que describa un problema)\n\nDevolvé SOLO el JSON pedido.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Sos un analista de feedback de clientes de BrightHome.\n\nRespondé ÚNICAMENTE con un objeto JSON VÁLIDO (sin markdown, sin ``` , sin texto extra) con estas claves EXACTAS:\nsentimiento, categoria, resumen, accion_recomendada\n\nValores permitidos:\n- sentimiento: \"positivo\" | \"neutro\" | \"negativo\"\n- categoria: \"satisfaccion\" | \"sugerencia\" | \"observacion\" | \"falla_tecnica\" | \"reclamo\"\n\nReglas:\n- Si faltan datos (comentario vacío, NPS vacío) o es ambiguo: devolvé sentimiento=\"neutro\", categoria=\"observacion\",\n  resumen explicando qué falta y accion_recomendada=\"Revisión manual\".\n- resumen: 1 frase, máximo 25 palabras.\n- accion_recomendada: 1 frase corta."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        880,
+        -560
+      ],
+      "id": "b3a900d0-7e01-4cd2-a01e-69b39b04fe84",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {
+          "maxOutputTokens": 800,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -336
+      ],
+      "id": "82b7fafb-7d9f-4641-acd0-59887937122b",
+      "name": "Google Gemini Chat Model",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba3610b5-6e98-42ca-8984-f048fa2be096",
+              "name": "fecha_procesamiento",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "021472ac-d5ae-4be7-8d73-d3adf498a132",
+              "name": "nombre_cliente",
+              "value": "={{ $('Limpio datos').item.json.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "7fd90452-63d8-4fc8-9000-32be44bbfa50",
+              "name": "email_cliente",
+              "value": "={{ $('Limpio datos').item.json.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "ce255adb-6f3a-427d-9f55-ff731e216c65",
+              "name": "puntaje_nps",
+              "value": "={{ $('Limpio datos').item.json.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "bad5799e-30b7-46c6-98fe-088d223dcad2",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('Limpio datos').item.json.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "ab176959-7d44-4c72-ad0a-8e4142197823",
+              "name": "fecha_respuesta",
+              "value": "={{ $('Limpio datos').item.json.fecha_respuesta }}",
+              "type": "string"
+            },
+            {
+              "id": "0e9abcc2-a4ac-4786-803e-efa048969284",
+              "name": "producto",
+              "value": "={{ $json.producto }}",
+              "type": "string"
+            },
+            {
+              "id": "45a9e10b-eac7-4583-943a-49288ef03530",
+              "name": "fecha_compra",
+              "value": "={{ $json.fecha_compra }}",
+              "type": "string"
+            },
+            {
+              "id": "aa153291-208f-4264-8db6-962a788ae084",
+              "name": "canal_venta",
+              "value": "={{ $json.canal_venta }}",
+              "type": "string"
+            },
+            {
+              "id": "4d72aa4d-8408-468e-acad-c6253f61fe5a",
+              "name": "monto",
+              "value": "={{ $json.monto }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        -736
+      ],
+      "id": "ab70c202-96fc-455a-9b44-37475eb81b80",
+      "name": "Junto datos con lo de supabase"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"sentimiento\": \"negativo\",\n  \"categoria\": \"falla_tecnica\",\n  \"resumen\": \"El cliente informa que el dispositivo dejó de funcionar tras pocos días.\",\n  \"accion_recomendada\": \"Derivar al equipo de soporte técnico.\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        -304
+      ],
+      "id": "f094ba88-2f44-494d-bf86-2e6243faea48",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1328,
+        -592
+      ],
+      "id": "d4adfa71-0e77-4589-a094-a645905db34d",
+      "name": "IA + Datos del cliente"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{ $json.fecha_procesamiento }}",
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "categoria_detectada": "={{ $json.categoria }}",
+            "camino": "={{ $json.camino }}",
+            "estado": "={{ $json.estado }}",
+            "observacion": "={{ $json.observacion }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "accion_ejecutada": "={{ $('AI Agent').item.json.output.accion_recomendada }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_detectada",
+              "displayName": "categoria_detectada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "camino",
+              "displayName": "camino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion",
+              "displayName": "observacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1872,
+        -576
+      ],
+      "id": "84da0718-f142-4952-8931-478c695dc50b",
+      "name": "Cargar en sheet",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8a7d9b8e-a9c2-49d0-975a-73bdd178d2af",
+              "name": "estado",
+              "value": "\"pendiente_revision\"",
+              "type": "string"
+            },
+            {
+              "id": "bc1c9651-e610-4c3c-b48c-b3354f0aa6ef",
+              "name": "categoria_detectada",
+              "value": "\"\"",
+              "type": "string"
+            },
+            {
+              "id": "0212007d-5032-45af-bda9-8ec1dfd2df32",
+              "name": "camino",
+              "value": "\"Revisión manual\"",
+              "type": "string"
+            },
+            {
+              "id": "bd2817bc-bd33-4845-99de-9c7c28cc7f6a",
+              "name": "accion_ejecutada",
+              "value": "\"Escalar a revisión\"",
+              "type": "string"
+            },
+            {
+              "id": "379878da-d681-40ea-9042-d02bd76e3a40",
+              "name": "observacion",
+              "value": "=IA error técnico: {{$json.error?.message || $json.error || 'Error IA'}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1216,
+        -160
+      ],
+      "id": "8ab64872-7c43-406a-a8cd-56dcbc9790d4",
+      "name": "Normalizar error técnico"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "12de1c9f-fcec-4568-9dba-33b076ea3be1",
+              "leftValue": "={{$json.estado}}",
+              "rightValue": "pendiente_revision",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1696,
+        -592
+      ],
+      "id": "9655fc2b-f0e2-427e-995d-52fa66e7f50e",
+      "name": "Hay error?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.categoria_detectada}}",
+                    "rightValue": "satisfaccion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "50341a81-36c9-40c8-b966-ea8043c13fab"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Clientes felices"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e2754984-13b0-4c5a-bda2-f2264fd6ca08",
+                    "leftValue": "={{$json.categoria_detectada}}",
+                    "rightValue": "sugerencia",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ideas y mejoras"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b307d528-7867-4fbd-81eb-7d02f2b3cb15",
+                    "leftValue": "={{$json.categoria_detectada}}",
+                    "rightValue": "observacion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Casos neutros"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a3d940c4-c411-4726-8229-dc01d962f415",
+                    "leftValue": "={{$json.categoria_detectada}}",
+                    "rightValue": "falla_tecnica",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Casos técnicos"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d35d6ef1-1b57-4c93-b719-42747ae67eb2",
+                    "leftValue": "={{$json.categoria_detectada}}",
+                    "rightValue": "reclamo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Casos críticos"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2128,
+        -656
+      ],
+      "id": "110b50de-e4ed-4277-8e28-eb6d677a7dbe",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "BrightHome",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Clientes felices",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID/YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "agradecimiento_enviado": true,
+            "id": "={{ $('Crear usuario en clientes felices').item.json.id }}",
+            "nombre_cliente": "={{ $('Crear usuario en clientes felices').item.json.fields.nombre_cliente }}",
+            "email_cliente": "={{ $('Crear usuario en clientes felices').item.json.fields.email_cliente }}",
+            "puntaje_nps": "={{ $('Crear usuario en clientes felices').item.json.fields.puntaje_nps }}",
+            "resumen_ia": "={{ $('Crear usuario en clientes felices').item.json.fields.resumen_ia }}",
+            "producto": "={{ $('Crear usuario en clientes felices').item.json.fields.producto }}",
+            "comentario_del_cliente": "={{ $('Crear usuario en clientes felices').item.json.fields.comentario_del_cliente }}",
+            "accion_ejecutada": "={{ $('Crear usuario en clientes felices').item.json.fields.accion_ejecutada }}",
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "comentario_del_cliente",
+              "displayName": "comentario_del_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "agradecimiento_enviado",
+              "displayName": "agradecimiento_enviado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2816,
+        -1280
+      ],
+      "id": "7c1e544e-5917-4795-9c2b-f678ca88ef1d",
+      "name": "Update en agradecimiento enviado",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.fields.email_cliente }}",
+        "subject": "=¡Gracias por tu feedback, {{ $json.fields.nombre_cliente }}! 💡",
+        "message": "=Hola {{ $json.fields.nombre_cliente }},\n\n¡Muchas gracias por compartir tu experiencia con BrightHome! 😊\n\nNos alegramos de que el producto te haya gustado.\n\nSi te parece bien, ¿nos das permiso para usar tu comentario como testimonio (sin datos sensibles) en nuestras comunicaciones?\n\nQuedamos a disposición.\n¡Gracias nuevamente!\n\nEquipo BrightHome\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2608,
+        -1280
+      ],
+      "id": "7d8527e3-40ab-4e4b-9db5-1316b9a98e49",
+      "name": "email de agradecimiento",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "BrightHome",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Clientes felices",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID/YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "agradecimiento_enviado": false,
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "puntaje_nps": "={{ $json.puntaje_nps }}",
+            "comentario_del_cliente": "={{ $json.comentario_del_cliente }}",
+            "producto": "={{ $json.producto }}",
+            "resumen_ia": "={{ $json.resumen }}",
+            "accion_ejecutada": "=Agradecimiento enviado",
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "comentario_del_cliente",
+              "displayName": "comentario_del_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "agradecimiento_enviado",
+              "displayName": "agradecimiento_enviado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2400,
+        -1280
+      ],
+      "id": "37dec272-e161-4506-b4d6-316c7aa67258",
+      "name": "Crear usuario en clientes felices",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fadd4c33-1877-4878-aecf-b8b534ac9646",
+              "name": "fecha_procesamiento",
+              "value": "={{ $json.fecha_procesamiento }}",
+              "type": "string"
+            },
+            {
+              "id": "9736b477-8ec9-43cf-9cfb-c526b8b2088f",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "da9294a3-5f30-4e44-9ef6-0499c12eefca",
+              "name": "categoria_detectada",
+              "value": "={{ $json.categoria_detectada }}",
+              "type": "string"
+            },
+            {
+              "id": "661fdb95-8812-4622-a00c-b9ebee261fb8",
+              "name": "camino",
+              "value": "={{ $json.camino }}",
+              "type": "string"
+            },
+            {
+              "id": "a5bd6932-0da5-462b-a091-ba69cb80b1e1",
+              "name": "estado",
+              "value": "={{ $json.estado }}",
+              "type": "string"
+            },
+            {
+              "id": "2681063a-9640-4fa9-becc-c6e04cd4d53f",
+              "name": "email_cliente",
+              "value": "={{ $json.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "1eb0568b-452c-41c4-b9c5-40b1ee6daa4e",
+              "name": "accion_ejecutada",
+              "value": "={{ $json.accion_ejecutada }}",
+              "type": "string"
+            },
+            {
+              "id": "d0778d68-ca9a-40b1-9624-3fd278cc2d0d",
+              "name": "producto",
+              "value": "={{ $('IA + Datos del cliente').item.json.producto }}",
+              "type": "string"
+            },
+            {
+              "id": "08db35fa-2893-4df4-8b11-1be3207602c3",
+              "name": "accion_recomendada",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.accion_recomendada }}",
+              "type": "string"
+            },
+            {
+              "id": "cc5c800e-a792-4c35-b545-f2757c57a52b",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('IA + Datos del cliente').item.json.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "5938d700-599a-4bc4-9fca-58e84e884787",
+              "name": "puntaje_nps",
+              "value": "={{ $('IA + Datos del cliente').item.json.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "a3a8e981-ff78-4a56-9d97-21410b77bce2",
+              "name": "resumen",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.resumen }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2224,
+        -1280
+      ],
+      "id": "11dbb8eb-2e96-42ae-aecd-56b0c1dccc2f",
+      "name": "Traer datos"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 830883715,
+          "mode": "list",
+          "cachedResultName": "Pendiente_revision",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "producto": "={{ $json.producto }}",
+            "puntaje_nps": "={{ $json.puntaje_nps }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "accion_recomendada_ia": "={{ $json.accion_recomendada }}",
+            "sentimiento_ia": "={{ $json.sentimiento }}",
+            "categoria_ia": "={{ $json.categoria }}",
+            "resumen_ia": "={{ $json.resumen_ia }}",
+            "comentario_original": "={{ $json.comentario_del_cliente }}",
+            "motivo_revision": "={{ !$json.output ? 'pendiente_revision: no vino output de IA' : 'pendiente_revision: output IA incompleto/invalidado' }}",
+            "estado": "pendiente_revision",
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "motivo_revision",
+              "displayName": "motivo_revision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentimiento_ia",
+              "displayName": "sentimiento_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_recomendada_ia",
+              "displayName": "accion_recomendada_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        -960
+      ],
+      "id": "f3ea74a8-c259-44ba-96fc-47359492dd1c",
+      "name": "Carga error en sheets",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fadd4c33-1877-4878-aecf-b8b534ac9646",
+              "name": "fecha_procesamiento",
+              "value": "={{ $json.fecha_procesamiento }}",
+              "type": "string"
+            },
+            {
+              "id": "9736b477-8ec9-43cf-9cfb-c526b8b2088f",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "da9294a3-5f30-4e44-9ef6-0499c12eefca",
+              "name": "categoria_detectada",
+              "value": "={{ $json.categoria_detectada }}",
+              "type": "string"
+            },
+            {
+              "id": "661fdb95-8812-4622-a00c-b9ebee261fb8",
+              "name": "camino",
+              "value": "={{ $json.camino }}",
+              "type": "string"
+            },
+            {
+              "id": "a5bd6932-0da5-462b-a091-ba69cb80b1e1",
+              "name": "estado",
+              "value": "={{ $json.estado }}",
+              "type": "string"
+            },
+            {
+              "id": "2681063a-9640-4fa9-becc-c6e04cd4d53f",
+              "name": "email_cliente",
+              "value": "={{ $json.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "1eb0568b-452c-41c4-b9c5-40b1ee6daa4e",
+              "name": "accion_ejecutada",
+              "value": "={{ $json.accion_ejecutada }}",
+              "type": "string"
+            },
+            {
+              "id": "d0778d68-ca9a-40b1-9624-3fd278cc2d0d",
+              "name": "producto",
+              "value": "={{ $('IA + Datos del cliente').item.json.producto }}",
+              "type": "string"
+            },
+            {
+              "id": "08db35fa-2893-4df4-8b11-1be3207602c3",
+              "name": "accion_recomendada",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.accion_recomendada }}",
+              "type": "string"
+            },
+            {
+              "id": "cc5c800e-a792-4c35-b545-f2757c57a52b",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('IA + Datos del cliente').item.json.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "5938d700-599a-4bc4-9fca-58e84e884787",
+              "name": "puntaje_nps",
+              "value": "={{ $('IA + Datos del cliente').item.json.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "a3a8e981-ff78-4a56-9d97-21410b77bce2",
+              "name": "resumen",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.resumen }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2336,
+        -1024
+      ],
+      "id": "be10429b-9979-4ab0-871d-db5faa48a23c",
+      "name": "Traer datos1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {
+          "maxOutputTokens": 200,
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2512,
+        -816
+      ],
+      "id": "dddf6823-eea7-4373-9f26-1f9515d681de",
+      "name": "Google Gemini Chat Model1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Producto: {{ $json.producto }}\nNPS: {{ $json.puntaje_nps }}\n\nFeedback:\n{{ $json.comentario_del_cliente ?? $json.resumen_ia ?? $json.resumen ?? \"\" }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Sos un clasificador temático de sugerencias de clientes de BrightHome.\nTu tarea es elegir UNA sola etiqueta para el tema principal del feedback.\n\nEtiquetas posibles (en minúscula): usabilidad, compatibilidad, precio, rendimiento, diseño, otro.\n\nReglas:\n- Elegí SOLO 1 etiqueta.\n- Si no es claro, devolvé \"otro\".\n- No expliques nada."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2528,
+        -1024
+      ],
+      "id": "090dc892-fb71-4365-8638-f0be556f07f0",
+      "name": "AI Agent1",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"tema_sugerencia\": {\n      \"type\": \"string\",\n      \"enum\": [\"usabilidad\", \"compatibilidad\", \"precio\", \"rendimiento\", \"diseño\", \"otro\"]\n    }\n  },\n  \"required\": [\"tema_sugerencia\"],\n  \"additionalProperties\": false\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2720,
+        -832
+      ],
+      "id": "fdfeef67-f4e7-4c30-8f9d-5b1b8461b580",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "BrightHome",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Sugerencias de clientes",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID/YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "categoria_ia": "={{ $json.categoria_ia }}",
+            "accion_ejecutada ": "={{ $json.accion_ejecutada }}",
+            "nombre_cliente": "={{ $('Traer datos1').item.json.nombre_cliente }}",
+            "puntaje_nps": "={{ $('Traer datos1').item.json.puntaje_nps }}",
+            "resumen_ia": "={{ $('Traer datos1').item.json.resumen }}",
+            "comentario_original": "={{ $('Traer datos1').item.json.comentario_del_cliente }}",
+            "producto": "={{ $('Traer datos1').item.json.producto }}",
+            "email_cliente": "={{ $('Traer datos1').item.json.email_cliente }}",
+            "tema_sugerencia": "={{ $json.tema_sugerencia }}",
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accion_ejecutada ",
+              "displayName": "accion_ejecutada ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "revisado_por_equipo",
+              "displayName": "revisado_por_equipo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "tema_sugerencia",
+              "displayName": "tema_sugerencia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        3072,
+        -1056
+      ],
+      "id": "9629e095-a194-433c-94ea-92a791d7d39f",
+      "name": "Create a record",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fadd4c33-1877-4878-aecf-b8b534ac9646",
+              "name": "fecha_procesamiento",
+              "value": "={{ $json.fecha_procesamiento }}",
+              "type": "string"
+            },
+            {
+              "id": "9736b477-8ec9-43cf-9cfb-c526b8b2088f",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "da9294a3-5f30-4e44-9ef6-0499c12eefca",
+              "name": "categoria_detectada",
+              "value": "={{ $json.categoria_detectada }}",
+              "type": "string"
+            },
+            {
+              "id": "661fdb95-8812-4622-a00c-b9ebee261fb8",
+              "name": "camino",
+              "value": "={{ $json.camino }}",
+              "type": "string"
+            },
+            {
+              "id": "a5bd6932-0da5-462b-a091-ba69cb80b1e1",
+              "name": "estado",
+              "value": "={{ $json.estado }}",
+              "type": "string"
+            },
+            {
+              "id": "2681063a-9640-4fa9-becc-c6e04cd4d53f",
+              "name": "email_cliente",
+              "value": "={{ $json.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "1eb0568b-452c-41c4-b9c5-40b1ee6daa4e",
+              "name": "accion_ejecutada",
+              "value": "={{ $json.accion_ejecutada }}",
+              "type": "string"
+            },
+            {
+              "id": "d0778d68-ca9a-40b1-9624-3fd278cc2d0d",
+              "name": "producto",
+              "value": "={{ $('IA + Datos del cliente').item.json.producto }}",
+              "type": "string"
+            },
+            {
+              "id": "08db35fa-2893-4df4-8b11-1be3207602c3",
+              "name": "accion_recomendada",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.accion_recomendada }}",
+              "type": "string"
+            },
+            {
+              "id": "cc5c800e-a792-4c35-b545-f2757c57a52b",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('IA + Datos del cliente').item.json.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "5938d700-599a-4bc4-9fca-58e84e884787",
+              "name": "puntaje_nps",
+              "value": "={{ $('IA + Datos del cliente').item.json.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "a3a8e981-ff78-4a56-9d97-21410b77bce2",
+              "name": "resumen",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.resumen }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2368,
+        -672
+      ],
+      "id": "ad4e89e8-eafd-431c-b0c5-7e3ab40c3caf",
+      "name": "Traer datos2"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "BrightHome",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Observaciones",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID/YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "seguimiento_necesario": false,
+            "puntaje_nps": "={{ $json.puntaje_nps }}",
+            "producto": "={{ $json.producto }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "comentario_original": "={{ $json.comentario_del_cliente }}",
+            "resumen_ia": "={{ $json.resumen }}",
+            "categoria_ia": "={{ $json.categoria_detectada }}",
+            "accion_ejecutada": "=Registrado sin acción adicional",
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "seguimiento_necesario",
+              "displayName": "seguimiento_necesario",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2608,
+        -672
+      ],
+      "id": "ffe8b3d5-cb49-477f-be7b-78868f6e2273",
+      "name": "Create a record1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza (saca tildes y pasa a minúsculas)\nconst normalize = (v = '') =>\n  v.toString()\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .trim()\n    .toLowerCase();\n\nconst allowed = new Set([\n  'usabilidad',\n  'compatibilidad',\n  'precio',\n  'rendimiento',\n  'diseno',\n  'otro',\n]);\n\n// Tomá el tema desde donde realmente viene\nconst temaRaw =\n  $json.tema_sugerencia ??\n  $json.output?.tema_sugerencia ??\n  $json.output?.label ??\n  $json.output?.category ??\n  'otro';\n\nlet tema = normalize(temaRaw);\nif (!allowed.has(tema)) tema = 'otro';\n\n// (opcional) sacá el objeto output para que Airtable no se confunda\nconst { output, ...rest } = $json;\n\nreturn {\n  json: {\n    ...rest,\n    tema_sugerencia: tema,\n    categoria_ia: 'sugerencia',\n    accion_ejecutada: 'Registrado para revisión de producto',\n  },\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        -1056
+      ],
+      "id": "3838aab1-f92c-412a-b531-1bcc2f4c099f",
+      "name": "limpieza + validación + salida estándar"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fadd4c33-1877-4878-aecf-b8b534ac9646",
+              "name": "fecha_procesamiento",
+              "value": "={{ $json.fecha_procesamiento }}",
+              "type": "string"
+            },
+            {
+              "id": "9736b477-8ec9-43cf-9cfb-c526b8b2088f",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "da9294a3-5f30-4e44-9ef6-0499c12eefca",
+              "name": "categoria_detectada",
+              "value": "={{ $json.categoria_detectada }}",
+              "type": "string"
+            },
+            {
+              "id": "661fdb95-8812-4622-a00c-b9ebee261fb8",
+              "name": "camino",
+              "value": "={{ $json.camino }}",
+              "type": "string"
+            },
+            {
+              "id": "a5bd6932-0da5-462b-a091-ba69cb80b1e1",
+              "name": "estado",
+              "value": "={{ $json.estado }}",
+              "type": "string"
+            },
+            {
+              "id": "2681063a-9640-4fa9-becc-c6e04cd4d53f",
+              "name": "email_cliente",
+              "value": "={{ $json.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "1eb0568b-452c-41c4-b9c5-40b1ee6daa4e",
+              "name": "accion_ejecutada",
+              "value": "={{ $json.accion_ejecutada }}",
+              "type": "string"
+            },
+            {
+              "id": "d0778d68-ca9a-40b1-9624-3fd278cc2d0d",
+              "name": "producto",
+              "value": "={{ $('IA + Datos del cliente').item.json.producto }}",
+              "type": "string"
+            },
+            {
+              "id": "08db35fa-2893-4df4-8b11-1be3207602c3",
+              "name": "accion_recomendada",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.accion_recomendada }}",
+              "type": "string"
+            },
+            {
+              "id": "cc5c800e-a792-4c35-b545-f2757c57a52b",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('IA + Datos del cliente').item.json.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "5938d700-599a-4bc4-9fca-58e84e884787",
+              "name": "puntaje_nps",
+              "value": "={{ $('IA + Datos del cliente').item.json.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "a3a8e981-ff78-4a56-9d97-21410b77bce2",
+              "name": "resumen",
+              "value": "={{ $('IA + Datos del cliente').item.json.output.resumen }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2496,
+        -480
+      ],
+      "id": "e9111087-dd56-4a60-b528-81bdcad8e22e",
+      "name": "Traer datos3"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "BrightHome",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Soporte técnico",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID/YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contactado": false,
+            "puntaje_nps": "={{ $json.puntaje_nps }}",
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "producto": "={{ $json.producto }}",
+            "comentario_original": "={{ $json.comentario_del_cliente }}",
+            "resumen_ia": "={{ $json.resumen }}",
+            "categoria_ia": "Falla_tecnica",
+            "estado_ticket": "abierto",
+            "accion_ejecutada": "Ticket creado en soporte técnico",
+            "fecha_registro": "={{$now.toISO()}}",
+            "alerta_48h_enviada": false
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "estado_ticket",
+              "displayName": "estado_ticket",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "abierto",
+                  "value": "abierto"
+                },
+                {
+                  "name": "en revisión",
+                  "value": "en revisión"
+                },
+                {
+                  "name": "resuelto",
+                  "value": "resuelto"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "asignado_a",
+              "displayName": "asignado_a",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Mariana Torres",
+                  "value": "Mariana Torres"
+                },
+                {
+                  "name": "Pablo Acosta",
+                  "value": "Pablo Acosta"
+                },
+                {
+                  "name": "Leonardo Ruiz",
+                  "value": "Leonardo Ruiz"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "contactado",
+              "displayName": "contactado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alerta_48h_enviada",
+              "displayName": "alerta_48h_enviada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alerta_48h_fecha",
+              "displayName": "alerta_48h_fecha",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2720,
+        -480
+      ],
+      "id": "c0c5e695-60f7-41b0-a8ac-e72ea348b1e1",
+      "name": "Create a record2",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "equipo-tecnico"
+        },
+        "text": "=🔧 *Nuevo ticket técnico* (estado: *abierto*)  *Cliente:* {{ $json.fields.nombre_cliente }} *Email:* {{ $json.fields.email_cliente }} *Producto:* {{ $json.fields.producto }}   |   *NPS:* {{ $json.fields.puntaje_nps }}  *Resumen IA:* {{$json.resumen_ia || $json.resumen || \"—\"}}  *Comentario (extracto):* “{{ $json.fields.comentario_original }}”  *Asignado a:* {{$json.asignado_a || \"—\"}} *Airtable:* {{$json.ticket_url || (\"Record ID: \" + ($json.id || \"—\"))}} ",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        2928,
+        -480
+      ],
+      "id": "c9b574ac-9cbe-40b2-a443-0a38d1b14994",
+      "name": "Enviar mensaje a soporte",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{ $('Create a record2').item.json.createdTime }}",
+            "nombre_cliente": "={{ $('Create a record2').item.json.fields.nombre_cliente }}",
+            "email_cliente": "={{ $('Create a record2').item.json.fields.email_cliente }}",
+            "categoria_detectada": "={{ $('Create a record2').item.json.fields.categoria_ia }}",
+            "camino": "Casos técnicos",
+            "accion_ejecutada": "={{ $('Create a record2').item.json.fields.accion_ejecutada }}",
+            "estado": "={{ $('Create a record2').item.json.fields.estado_ticket }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_detectada",
+              "displayName": "categoria_detectada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "camino",
+              "displayName": "camino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion",
+              "displayName": "observacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3136,
+        -480
+      ],
+      "id": "ec8c6bb3-150a-4c0d-9b09-c5e14b31a473",
+      "name": "Cargar en logs",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fadd4c33-1877-4878-aecf-b8b534ac9646",
+              "name": "fecha_procesamiento",
+              "value": "={{ $json.fecha_procesamiento }}",
+              "type": "string"
+            },
+            {
+              "id": "9736b477-8ec9-43cf-9cfb-c526b8b2088f",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "da9294a3-5f30-4e44-9ef6-0499c12eefca",
+              "name": "categoria_detectada",
+              "value": "={{ $json.categoria_detectada }}",
+              "type": "string"
+            },
+            {
+              "id": "661fdb95-8812-4622-a00c-b9ebee261fb8",
+              "name": "camino",
+              "value": "={{ $json.camino }}",
+              "type": "string"
+            },
+            {
+              "id": "a5bd6932-0da5-462b-a091-ba69cb80b1e1",
+              "name": "estado",
+              "value": "={{ $json.estado }}",
+              "type": "string"
+            },
+            {
+              "id": "2681063a-9640-4fa9-becc-c6e04cd4d53f",
+              "name": "email_cliente",
+              "value": "={{ $json.email_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "1eb0568b-452c-41c4-b9c5-40b1ee6daa4e",
+              "name": "accion_ejecutada",
+              "value": "={{ $json.accion_ejecutada }}",
+              "type": "string"
+            },
+            {
+              "id": "d0778d68-ca9a-40b1-9624-3fd278cc2d0d",
+              "name": "producto",
+              "value": "={{ $('IA + Datos del cliente').item.json.producto }}",
+              "type": "string"
+            },
+            {
+              "id": "08db35fa-2893-4df4-8b11-1be3207602c3",
+              "name": "accion_recomendada",
+              "value": "={{ $('Define Camino + Estado').item.json.accion_recomendada }}",
+              "type": "string"
+            },
+            {
+              "id": "cc5c800e-a792-4c35-b545-f2757c57a52b",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('IA + Datos del cliente').item.json.comentario_del_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "5938d700-599a-4bc4-9fca-58e84e884787",
+              "name": "puntaje_nps",
+              "value": "={{ $('IA + Datos del cliente').item.json.puntaje_nps }}",
+              "type": "number"
+            },
+            {
+              "id": "a3a8e981-ff78-4a56-9d97-21410b77bce2",
+              "name": "resumen",
+              "value": "={{ $('Define Camino + Estado').item.json.resumen_ia }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2432,
+        -288
+      ],
+      "id": "1c97ff0e-eaa2-44f0-8dd0-1c32d1894912",
+      "name": "Traer datos4"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "BrightHome",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Reclamos y atención al cliente",
+          "cachedResultUrl": "https://airtable.com/YOUR_AIRTABLE_BASE_ID/YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contactado": false,
+            "puntaje_nps": "={{ $json.puntaje_nps }}",
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "producto": "={{ $json.producto }}",
+            "comentario_original": "={{ $json.comentario_del_cliente }}",
+            "resumen_ia": "={{ $json.resumen }}",
+            "categoria_ia": "reclamo",
+            "estado_ticket": "abierto",
+            "prioridad": "alta",
+            "accion_ejecutada": "Reclamo registrado y alerta enviada al equipo de atención",
+            "alerta_48h_enviada": false,
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "estado_ticket",
+              "displayName": "estado_ticket",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "abierto",
+                  "value": "abierto"
+                },
+                {
+                  "name": "en revisión",
+                  "value": "en revisión"
+                },
+                {
+                  "name": "cerrado",
+                  "value": "cerrado"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "asignado_a",
+              "displayName": "asignado_a",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Lucía Pereyra",
+                  "value": "Lucía Pereyra"
+                },
+                {
+                  "name": "Marcos Díaz",
+                  "value": "Marcos Díaz"
+                },
+                {
+                  "name": "Elena Correa",
+                  "value": "Elena Correa"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "prioridad",
+              "displayName": "prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "alta",
+                  "value": "alta"
+                },
+                {
+                  "name": "media",
+                  "value": "media"
+                },
+                {
+                  "name": "baja",
+                  "value": "baja"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "contactado",
+              "displayName": "contactado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alerta_48h_enviada",
+              "displayName": "alerta_48h_enviada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alerta_48h_fecha",
+              "displayName": "alerta_48h_fecha",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2720,
+        -288
+      ],
+      "id": "83924359-1d1d-4c75-b0c7-2b3045afd737",
+      "name": "Create a record3",
+      "alwaysOutputData": false,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{ $json.createdTime }}",
+            "nombre_cliente": "={{ $json.fields.nombre_cliente }}",
+            "email_cliente": "={{ $json.fields.email_cliente }}",
+            "categoria_detectada": "Reclamo",
+            "camino": "Casos críticos",
+            "accion_ejecutada": "={{ $json.fields.accion_ejecutada }}",
+            "estado": "={{ $json.fields.estado_ticket }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_detectada",
+              "displayName": "categoria_detectada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "camino",
+              "displayName": "camino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion",
+              "displayName": "observacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2928,
+        -288
+      ],
+      "id": "05e56efd-04ef-4566-accc-a786d03b777c",
+      "name": "Cargar en logs1",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "equipo-atencion-cliente"
+        },
+        "text": "=<!channel> ⚠️ *RECLAMO CRÍTICO* (Prioridad: * {{ $('Create a record3').item.json.fields.prioridad || \"alta\"}}* | Estado: *{{ $('Create a record3').item.json.fields.estado_ticket  || \"abierto\"}}*)\n\n👤 *Cliente:* {{ $('Create a record3').item.json.fields.nombre_cliente }}\n📧 *Email:* {{ $('Create a record3').item.json.fields.email_cliente }}\n📦 *Producto:* {{ $('Create a record3').item.json.fields.producto }}   |   *NPS:* {{ $('Create a record3').item.json.fields.puntaje_nps }}\n🧠 *Resumen IA:* {{ $('Create a record3').item.json.fields.resumen_ia }}\n\n💬 *Comentario (extracto):*\n{{ $('Create a record3').item.json.fields.comentario_original }}\n\n🆔 *Airtable Record ID:* {{ $('Create a record3').item.json.id }}\n\n✅ *Acción requerida:* contactar al cliente ASAP y marcar *contactado* en Airtable.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        3152,
+        -288
+      ],
+      "id": "46f5f80e-94c7-4963-8ad1-2adf71c60961",
+      "name": "Enviar mensaje a soporte1",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "Elegir el camino y enviar la informacion completa",
+        "height": 1216,
+        "width": 1264,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2112,
+        -1344
+      ],
+      "typeVersion": 1,
+      "id": "d8bdb05f-765b-4e6c-acfb-bfa59e39bf1b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Ver informacion del cliente y discriminar de que se trata",
+        "height": 640,
+        "width": 2064,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        -816
+      ],
+      "typeVersion": 1,
+      "id": "a0b6aff5-c0de-434e-a803-ed7bc0b0cd8e",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{ $json.fields.fecha_registro }}",
+            "nombre_cliente": "={{ $json.fields.nombre_cliente }}",
+            "email_cliente": "={{ $json.fields.email_cliente }}",
+            "categoria_detectada": "observacion",
+            "camino": "Casos técnicos",
+            "accion_ejecutada": "={{ $json.fields.accion_ejecutada }}",
+            "estado": "procesado"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_detectada",
+              "displayName": "categoria_detectada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "camino",
+              "displayName": "camino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion",
+              "displayName": "observacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2864,
+        -672
+      ],
+      "id": "9753743d-11bc-438b-aed7-05b23ece60af",
+      "name": "Cargar en logs2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{ $json.fields.fecha_registro }}",
+            "nombre_cliente": "={{ $json.fields.nombre_cliente }}",
+            "email_cliente": "={{ $json.fields.email_cliente }}",
+            "categoria_detectada": "satisfaccion",
+            "camino": "Clientes felices",
+            "accion_ejecutada": "={{ $json.fields.accion_ejecutada }}",
+            "estado": "procesado"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_detectada",
+              "displayName": "categoria_detectada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "camino",
+              "displayName": "camino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion",
+              "displayName": "observacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3008,
+        -1280
+      ],
+      "id": "6695b4ad-8761-4ece-acde-11af677b5916",
+      "name": "Cargar en logs3",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{ $json.fields.fecha_registro }}",
+            "nombre_cliente": "={{ $json.fields.nombre_cliente }}",
+            "email_cliente": "={{ $json.fields.email_cliente }}",
+            "categoria_detectada": "sugerencia",
+            "camino": "Ideas y mejoras",
+            "accion_ejecutada": "={{ $json.fields[\"accion_ejecutada \"] }}",
+            "estado": "procesado"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_detectada",
+              "displayName": "categoria_detectada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "camino",
+              "displayName": "camino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_ejecutada",
+              "displayName": "accion_ejecutada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion",
+              "displayName": "observacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3248,
+        -1056
+      ],
+      "id": "cb56bc7c-c5b1-4775-8634-22462ba5078d",
+      "name": "Cargar en logs4",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "errores-workflow"
+        },
+        "text": "=⚠️ *[Alerta IA] Revisión manual requerida* 📅 Fecha: {{ $json.fecha_registro }} 👤 Cliente: {{$json.nombre_cliente}} 📧 Email: {{$json.email_cliente}}  💬 Comentario: \"{{ $json.comentario_original }}\"  🧾 Motivo: {{ $json.motivo_revision }}  👉 Revisar Logs (estado: pendiente_revision)",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1968,
+        -1024
+      ],
+      "id": "d0aaaf23-fbc0-447d-8bf8-02fa4905a52c",
+      "name": "Alerta #errores-workflow",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "errores-workflow"
+        },
+        "text": "=⚠️ *[Alerta IA] Revisión manual requerida* 👤 No existe Cliente en supabase 👉 {{ $('Limpio datos').item.json.nombre_cliente }}. Revisar Logs (estado: pendiente_revision)",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1296,
+        -976
+      ],
+      "id": "f0aa5f3a-cd38-40cd-a8c6-9460788c4ee2",
+      "name": "Alerta #errores-workflow1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "Errores",
+        "height": 240,
+        "width": 1072,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        -1056
+      ],
+      "typeVersion": 1,
+      "id": "5a517e58-76d7-4f7e-a219-083a7e3a64c4",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "airtableTokenApi",
+        "baseId": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "id"
+        },
+        "tableId": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "id"
+        },
+        "triggerField": "fecha_respuesta",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -768
+      ],
+      "id": "bb9ddb6e-1464-49b2-b6bf-b6db0517819a",
+      "name": "Trae la tabla",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 830883715,
+          "mode": "list",
+          "cachedResultName": "Pendiente_revision",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_registro": "={{$now.toISO()}}",
+            "estado": "pendiente_revision",
+            "motivo_revision": "No existe cliente en supabase",
+            "nombre_cliente": "={{ $('Limpio datos').item.json.nombre_cliente }}",
+            "email_cliente": "={{ $('Limpio datos').item.json.email_cliente }}",
+            "comentario_original": "={{ $('Limpio datos').item.json.comentario_del_cliente }}",
+            "puntaje_nps": "={{ $('Limpio datos').item.json.puntaje_nps }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "motivo_revision",
+              "displayName": "motivo_revision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentimiento_ia",
+              "displayName": "sentimiento_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_recomendada_ia",
+              "displayName": "accion_recomendada_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        -976
+      ],
+      "id": "17f53200-7db1-452f-85d3-2f2ac644c8aa",
+      "name": "Cargar error supabase",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "errores-workflow"
+        },
+        "text": "=⚠️ *[Alerta IA] Revisión manual requerida* 📅 Fecha: {{ $json.fecha_registro }} 👤 Cliente: {{$json.nombre_cliente}} 📧 Email: {{$json.email_cliente}}  💬 Comentario: \"{{ $json.comentario_original }}\"  🧾 Motivo: {{ $json.motivo_revision }}  👉 Revisar Logs (estado: pendiente_revision)",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        3232,
+        -832
+      ],
+      "id": "9e1aa467-0d94-43f2-a0dd-2de91e9b4546",
+      "name": "Alerta #errores-workflow2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 830883715,
+          "mode": "list",
+          "cachedResultName": "Pendiente_revision",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "producto": "={{ $json.producto }}",
+            "puntaje_nps": "={{ $json.puntaje_nps }}",
+            "email_cliente": "={{ $json.email_cliente }}",
+            "nombre_cliente": "={{ $json.nombre_cliente }}",
+            "accion_recomendada_ia": "={{ $json.accion_recomendada }}",
+            "sentimiento_ia": "={{ $json.sentimiento }}",
+            "categoria_ia": "={{ $json.categoria }}",
+            "resumen_ia": "={{ $json.resumen_ia }}",
+            "comentario_original": "={{ $json.comentario_del_cliente }}",
+            "motivo_revision": "={{ !$json.output ? 'pendiente_revision: no vino output de IA' : 'pendiente_revision: output IA incompleto/invalidado' }}",
+            "estado": "pendiente_revision",
+            "fecha_registro": "={{$now.toISO()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_registro",
+              "displayName": "fecha_registro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "motivo_revision",
+              "displayName": "motivo_revision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comentario_original",
+              "displayName": "comentario_original",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentimiento_ia",
+              "displayName": "sentimiento_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accion_recomendada_ia",
+              "displayName": "accion_recomendada_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_cliente",
+              "displayName": "email_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje_nps",
+              "displayName": "puntaje_nps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3072,
+        -832
+      ],
+      "id": "4f674d67-bbe2-43d3-ba6d-98f392ec2986",
+      "name": "Cargar error ia",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "Errores",
+        "height": 192,
+        "width": 288,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1104,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "31639b64-9c5b-477a-b321-fa0f4fcb2dcc",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Errores",
+        "height": 224,
+        "width": 336,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3040,
+        -880
+      ],
+      "typeVersion": 1,
+      "id": "d4035592-f65e-4e4b-8b0e-b099a84a51e6",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $json;\nconst ia = (base.output && typeof base.output === \"object\") ? base.output : base;\n\nconst sentimiento = (ia.sentimiento ?? \"\").toString().trim();\nconst categoria = (ia.categoria ?? \"\").toString().trim();\nconst resumen_ia = (ia.resumen ?? \"\").toString().trim();\nconst accion_recomendada = (ia.accion_recomendada ?? \"\").toString().trim();\n\nconst allowedCat = new Set([\"satisfaccion\",\"sugerencia\",\"observacion\",\"falla_tecnica\",\"reclamo\"]);\nconst allowedSent = new Set([\"positivo\",\"neutro\",\"negativo\"]);\n\nlet estado = \"procesado\";\nlet observacion = \"\";\nlet camino = \"\";\nlet accion_ejecutada = \"\";\n\n// Validación mínima\nif (!allowedCat.has(categoria) || !allowedSent.has(sentimiento) || !resumen_ia || !accion_recomendada) {\n  estado = \"pendiente_revision\";\n  const faltantes = [];\n  if (!allowedSent.has(sentimiento)) faltantes.push(\"sentimiento inválido/faltante\");\n  if (!allowedCat.has(categoria)) faltantes.push(\"categoria inválida/faltante\");\n  if (!resumen_ia) faltantes.push(\"resumen faltante\");\n  if (!accion_recomendada) faltantes.push(\"accion_recomendada faltante\");\n\n  observacion = `Salida IA inválida o incompleta: ${faltantes.join(\", \")}.`;\n  camino = \"Revisión manual\";\n  accion_ejecutada = \"Escalar a revisión\";\n} else {\n  // Ruteo consistente con tu Switch\n  if (categoria === \"satisfaccion\") {\n    camino = \"Clientes felices\";\n    accion_ejecutada = \"Agradecimiento enviado\";\n  } else if (categoria === \"sugerencia\") {\n    camino = \"Ideas y mejoras\";\n    accion_ejecutada = \"Registrado y categorizado (tema)\";\n  } else if (categoria === \"observacion\") {\n    camino = \"Experiencias neutrales\";\n    accion_ejecutada = \"Registrado sin acción adicional\";\n  } else if (categoria === \"falla_tecnica\") {\n    camino = \"Casos técnicos\";\n    accion_ejecutada = \"Ticket técnico creado y alerta enviada\";\n  } else if (categoria === \"reclamo\") {\n    camino = \"Reclamos\";\n    accion_ejecutada = \"Reclamo registrado y alerta enviada\";\n  }\n}\n\nreturn [{\n  json: {\n    ...base,\n\n    // Normalización estándar para el resto del flujo\n    sentimiento,\n    categoria,\n    categoria_detectada: categoria,\n    resumen_ia,\n    accion_recomendada,\n\n    estado,\n    observacion,\n    camino,\n    accion_ejecutada,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        -592
+      ],
+      "id": "b5a5f46c-009d-459b-8d41-869a57ce6796",
+      "name": "Define Camino + Estado"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "21755d8f-0125-4b46-97ab-a3e45d3a08f7",
+              "name": "puntaje_nps",
+              "value": "={{ $('Limpio datos').item.json.puntaje_nps }}",
+              "type": "string"
+            },
+            {
+              "id": "82c0dfc2-1f2a-4be8-a0bb-ff362bdbd642",
+              "name": "comentario_del_cliente",
+              "value": "={{ $('Limpio datos').item.json.comentario_del_cliente }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        -560
+      ],
+      "id": "ad9475a1-d9f5-41b0-831c-27b8f78778a8",
+      "name": "IA input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3b29e67f-602b-4823-ace3-6fc1fa9a79e2",
+              "leftValue": "={{ !!$json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        544,
+        -768
+      ],
+      "id": "e0ac91a6-953e-4711-8a3f-ee11a8bfa9c7",
+      "name": "El email no existe?"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Limpio datos": {
+      "main": [
+        [
+          {
+            "node": "Conecto con Supabase via email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conecto con Supabase via email": {
+      "main": [
+        [
+          {
+            "node": "El email no existe?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "IA + Datos del cliente",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Normalizar error técnico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Junto datos con lo de supabase": {
+      "main": [
+        [
+          {
+            "node": "IA + Datos del cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA + Datos del cliente": {
+      "main": [
+        [
+          {
+            "node": "Define Camino + Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar error técnico": {
+      "main": [
+        [
+          {
+            "node": "IA + Datos del cliente",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cargar en sheet": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay error?": {
+      "main": [
+        [
+          {
+            "node": "Carga error en sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cargar en sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Traer datos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Traer datos1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Traer datos2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Traer datos3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Traer datos4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "email de agradecimiento": {
+      "main": [
+        [
+          {
+            "node": "Update en agradecimiento enviado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Crear usuario en clientes felices": {
+      "main": [
+        [
+          {
+            "node": "email de agradecimiento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Traer datos": {
+      "main": [
+        [
+          {
+            "node": "Crear usuario en clientes felices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update en agradecimiento enviado": {
+      "main": [
+        [
+          {
+            "node": "Cargar en logs3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Traer datos1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "limpieza + validación + salida estándar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cargar error ia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Cargar en logs4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Carga error en sheets": {
+      "main": [
+        [
+          {
+            "node": "Alerta #errores-workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traer datos2": {
+      "main": [
+        [
+          {
+            "node": "Create a record1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record1": {
+      "main": [
+        [
+          {
+            "node": "Cargar en logs2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "limpieza + validación + salida estándar": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traer datos3": {
+      "main": [
+        [
+          {
+            "node": "Create a record2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record2": {
+      "main": [
+        [
+          {
+            "node": "Enviar mensaje a soporte",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Enviar mensaje a soporte": {
+      "main": [
+        [
+          {
+            "node": "Cargar en logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar en logs": {
+      "main": [
+        []
+      ]
+    },
+    "Traer datos4": {
+      "main": [
+        [
+          {
+            "node": "Create a record3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record3": {
+      "main": [
+        [
+          {
+            "node": "Cargar en logs1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Cargar en logs1": {
+      "main": [
+        [
+          {
+            "node": "Enviar mensaje a soporte1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar mensaje a soporte1": {
+      "main": [
+        []
+      ]
+    },
+    "Alerta #errores-workflow": {
+      "main": [
+        []
+      ]
+    },
+    "Trae la tabla": {
+      "main": [
+        [
+          {
+            "node": "Limpio datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar error supabase": {
+      "main": [
+        [
+          {
+            "node": "Alerta #errores-workflow1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar error ia": {
+      "main": [
+        [
+          {
+            "node": "Alerta #errores-workflow2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define Camino + Estado": {
+      "main": [
+        [
+          {
+            "node": "Hay error?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "El email no existe?": {
+      "main": [
+        [
+          {
+            "node": "Cargar error supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Junto datos con lo de supabase",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IA input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "2h9whZF3JMzuI4zn0_CMq",
+    "saveDataErrorExecution": "all"
+  },
+  "tags": [
+    {
+      "updatedAt": "2026-02-03T23:26:05.433Z",
+      "createdAt": "2026-02-03T23:26:05.433Z",
+      "id": "61Nxw2wxjJdHlrCg",
+      "name": "aaa"
+    }
+  ]
+}

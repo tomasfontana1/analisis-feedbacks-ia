@@ -1,0 +1,335 @@
+{
+  "name": "Manejo de errores",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -128
+      ],
+      "id": "73b1b07c-3896-44d5-ba25-4cc48c936a91",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d56353f2-4577-4b2f-9ef0-224c15162c20",
+              "name": "fecha_error",
+              "value": "={{$now.toISO()}}",
+              "type": "string"
+            },
+            {
+              "id": "be25401d-6f56-4cbc-90d3-623eb352d2c5",
+              "name": "workflow_name",
+              "value": "={{$json.workflow?.name || $json.workflowName || 'desconocido'}}",
+              "type": "string"
+            },
+            {
+              "id": "3afa49f3-e309-48f7-b2c4-ff553abcdcba",
+              "name": "workflow_id",
+              "value": "={{$json.workflow?.id || $json.workflowId || ''}}",
+              "type": "string"
+            },
+            {
+              "id": "95d7c1ea-3081-472e-bfb9-40c31053dfae",
+              "name": "execution_id",
+              "value": "={{$json.execution?.id || $json.executionId || ''}}",
+              "type": "string"
+            },
+            {
+              "id": "878e0f2f-864e-408d-906a-611ad006efb9",
+              "name": "node_error",
+              "value": "={{$json.execution?.lastNodeExecuted || ''}}",
+              "type": "string"
+            },
+            {
+              "id": "2ea9f0ab-23f0-486e-a193-2adae306cd69",
+              "name": "mensaje_error",
+              "value": "={{$json.execution?.error?.message || ''}}",
+              "type": "string"
+            },
+            {
+              "id": "fcfdd964-1b9d-4a5d-92e1-44013b1665f3",
+              "name": "stack",
+              "value": "={{$json.execution?.error?.stack || ''}}",
+              "type": "string"
+            },
+            {
+              "id": "9d90b12d-ff62-4c70-91ee-c088a6a226fc",
+              "name": "ultimo_payload",
+              "value": "={{JSON.stringify($json, null, 0)}}",
+              "type": "string"
+            },
+            {
+              "id": "8b9eff7f-9e85-46bc-ace7-9826967cebda",
+              "name": "execution_url",
+              "value": "={{$json.execution?.url || ''}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -128
+      ],
+      "id": "e34ed309-5de0-4897-a2b4-8b494e44e69c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "errores-workflow"
+        },
+        "text": "=🚨 Error técnico ({{$json.severidad || 'media'}})\n• Workflow: {{$json.workflow_origen}}\n• Nodo: {{$json.node_error}}\n• Mensaje: {{$json.mensaje_error}}\n• Exec: {{$json.execution_id}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        896,
+        -128
+      ],
+      "id": "8ebd362c-925f-4b52-a012-6016d0d8f6dd",
+      "name": "Send a message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "M2 Integradora",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1460858497,
+          "mode": "list",
+          "cachedResultName": "Logs Errores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_procesamiento": "={{$now.toISO()}}",
+            "workflow_origen": "={{ $('Edit Fields').item.json.workflow_name }}",
+            "workflow_id": "={{ $('Edit Fields').item.json.workflow_id }}",
+            "execution_id": "={{ $('Edit Fields').item.json.execution_id }}",
+            "node_error": "={{ $('Edit Fields').item.json.node_error }}",
+            "stack": "={{ $('Edit Fields').item.json.stack }}",
+            "mensaje_error": "={{ $('Edit Fields').item.json.mensaje_error }}",
+            "ultimo_payload": "={{ $('Edit Fields').item.json.ultimo_payload }}",
+            "execution_url": "={{ $json.execution_url }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha_procesamiento",
+              "displayName": "fecha_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow_origen",
+              "displayName": "workflow_origen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "workflow_id",
+              "displayName": "workflow_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "node_error",
+              "displayName": "node_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mensaje_error",
+              "displayName": "mensaje_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "stack",
+              "displayName": "stack",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ultimo_payload",
+              "displayName": "ultimo_payload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "execution_url",
+              "displayName": "execution_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "a2612b31-3d80-434e-a87f-4ace59dbdd73",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1ef8143e-c90a-4708-9550-74a0f07f12c3",
+              "leftValue": "={{$json.workflow_origen}}",
+              "rightValue": "Manejo de errores",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -128
+      ],
+      "id": "83e547b8-3090-4d6c-99c8-29b7eafe1806",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": []
+}
